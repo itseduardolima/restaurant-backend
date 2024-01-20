@@ -1,10 +1,9 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { RestaurantModule } from './restaurant/restaurant.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseConfigService } from './config/database/database-config.service';
 import { ConfigModule } from '@nestjs/config';
+import * as cors from 'cors';
 
 @Module({
   imports: [
@@ -17,7 +16,14 @@ import { ConfigModule } from '@nestjs/config';
       inject: [DatabaseConfigService],
     }),
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
 })
-export class AppModule {}
+
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(cors())
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}

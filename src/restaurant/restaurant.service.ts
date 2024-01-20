@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RestaurantEntity } from './entities/restaurant.entity';
-import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 
 @Injectable()
@@ -11,11 +10,6 @@ export class RestaurantService {
     @InjectRepository(RestaurantEntity)
     private readonly restaurantRepository: Repository<RestaurantEntity>,
   ) {}
-
-  async create(restaurantDto: CreateRestaurantDto) {
-    const restaurant = this.restaurantRepository.create(restaurantDto);
-    return await this.restaurantRepository.save(restaurant);
-  }
 
   async findAll() {
     return await this.restaurantRepository.find();

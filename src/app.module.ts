@@ -3,6 +3,7 @@ import { RestaurantModule } from './restaurant/restaurant.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseConfigService } from './config/database/database-config.service';
 import { ConfigModule } from '@nestjs/config';
+import { UsersModule } from './users/users.module';
 import * as cors from 'cors';
 
 @Module({
@@ -15,6 +16,7 @@ import * as cors from 'cors';
       useClass: DatabaseConfigService,
       inject: [DatabaseConfigService],
     }),
+    UsersModule,
   ],
   controllers: [],
   providers: [],

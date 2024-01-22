@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { ProfileEntity } from 'src/profile/entities/profile.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 
 @Entity('Users')
 export class UserEntity {
@@ -20,9 +21,16 @@ export class UserEntity {
   @Column()
   user_status: boolean;
 
-  @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  user_create_date: Date;
+  @Column()
+  user_profile: number;
 
-  @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  user_update_date: Date;
+  @CreateDateColumn({ name: 'user_created_date' })
+  userCreatedDate: Date;
+
+  @UpdateDateColumn({ name: 'user_update_date' })
+  userUpdateDate: Date;
+
+  @ManyToOne(() => ProfileEntity, (profile) => profile.users)
+  @JoinColumn({ name: 'user_profile' })
+  profile: ProfileEntity
 }

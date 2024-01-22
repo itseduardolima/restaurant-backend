@@ -3,9 +3,9 @@ import { UserEntity } from '../entities/user.entity';
 
 export class CreateUserDto extends OmitType(UserEntity, [
   'user_id',
-  'user_create_date',
-  'user_update_date',
-  'user_status'
+  'user_status',
+  'userCreatedDate',
+  'userUpdateDate'
 ]) {
   @ApiProperty()
   user_name: string;
@@ -18,4 +18,7 @@ export class CreateUserDto extends OmitType(UserEntity, [
 
   @ApiProperty()
   user_phone: string;
+
+  @ApiProperty()
+  user_profile: number;
 }

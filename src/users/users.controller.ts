@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { UserService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { QueryUserDto } from './dto/query-user.dto';
+import { FilterWorkstation } from 'src/common/utils/filterwork.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -10,8 +12,11 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  async findAll() {
-    return this.userService.findAll();
+  async getAll(
+    @Query() searchType: QueryUserDto,
+    @Query() paginationFilter: FilterWorkstation,
+  ) {
+    return this.userService.getAll(paginationFilter, searchType);
   }
 
   @Get(':id')

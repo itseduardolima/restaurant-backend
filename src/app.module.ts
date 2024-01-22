@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseConfigService } from './config/database/database-config.service';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
+import { ProfileModule } from './profile/profile.module';
 import * as cors from 'cors';
 
 @Module({
@@ -17,6 +18,7 @@ import * as cors from 'cors';
       inject: [DatabaseConfigService],
     }),
     UsersModule,
+    ProfileModule,
   ],
   controllers: [],
   providers: [],

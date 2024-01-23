@@ -5,6 +5,7 @@ export function setupSwagger(app: INestApplication): void {
   const options = new DocumentBuilder()
     .setTitle('API do Restaurante')
     .setDescription('')
+    .addBearerAuth()
     .setVersion('1.0')
     .build();
 

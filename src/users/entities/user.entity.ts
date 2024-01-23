@@ -1,5 +1,13 @@
 import { ProfileEntity } from 'src/profile/entities/profile.entity';
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('Users')
 export class UserEntity {
@@ -12,8 +20,8 @@ export class UserEntity {
   @Column()
   user_email: string;
 
-  @Column()
-  user_password: string;
+  @Column({ nullable: true })
+  user_password?: string;
 
   @Column()
   user_phone: string;
@@ -30,7 +38,10 @@ export class UserEntity {
   @UpdateDateColumn({ name: 'user_update_date' })
   userUpdateDate: Date;
 
+  @Column({ nullable: true })
+  user_refresh_token: string;
+
   @ManyToOne(() => ProfileEntity, (profile) => profile.users)
   @JoinColumn({ name: 'user_profile' })
-  profile: ProfileEntity
+  profile: ProfileEntity;
 }

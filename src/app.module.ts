@@ -5,6 +5,7 @@ import { DatabaseConfigService } from './config/database/database-config.service
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { ProfileModule } from './profile/profile.module';
+import { AuthModule } from './auth/auth.module';
 import * as cors from 'cors';
 
 @Module({
@@ -19,6 +20,7 @@ import * as cors from 'cors';
     }),
     UsersModule,
     ProfileModule,
+    AuthModule,
   ],
   controllers: [],
   providers: [],

@@ -7,6 +7,8 @@ import { UsersModule } from './users/users.module';
 import { ProfileModule } from './profile/profile.module';
 import { AuthModule } from './auth/auth.module';
 import * as cors from 'cors';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './auth/shared/guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -23,13 +25,15 @@ import * as cors from 'cors';
     AuthModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
 })
-
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(cors())
-      .forRoutes({ path: '*', method: RequestMethod.ALL });
+    consumer.apply(cors()).forRoutes({ path: '*', method: RequestMethod.ALL });
   }
 }

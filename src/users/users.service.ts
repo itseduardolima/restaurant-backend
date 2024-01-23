@@ -13,6 +13,7 @@ import { FilterWorkstation } from 'src/common/utils/filterwork.dto';
 import { paginate } from 'nestjs-typeorm-paginate';
 import { ProfileEntity } from 'src/profile/entities/profile.entity';
 import * as bcrypt from 'bcrypt';
+import { CreateClientDto } from './dto/create-client.dto';
 
 @Injectable()
 export class UserService {
@@ -83,6 +84,26 @@ export class UserService {
       user_profile,
     });
 
+    try {
+      return await this.userRepository.save(newUser);
+    } catch (error) {
+      throw new BadRequestException('Erro ao criar o usuário', error.message);
+    }
+  }
+
+  async registerPublic(createClientDto: CreateClientDto): Promise<UserEntity> {
+    const { user_name, user_password, user_email, user_phone } = createClientDto;
+    const user_profile = 3;
+  
+    const hashedPassword = await this.hashPassword(user_password);
+    const newUser = this.userRepository.create({
+      user_name,
+      user_password: hashedPassword,
+      user_email,
+      user_phone,
+      user_profile,
+    });
+  
     try {
       return await this.userRepository.save(newUser);
     } catch (error) {

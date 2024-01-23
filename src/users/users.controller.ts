@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -7,6 +17,8 @@ import { QueryUserDto } from './dto/query-user.dto';
 import { FilterWorkstation } from 'src/common/utils/filterwork.dto';
 import { PermissionGuard } from 'src/auth/shared/guards/permission.guard';
 import AccessProfile from 'src/auth/enums/permission.type';
+import { CreateClientDto } from './dto/create-client.dto';
+import { PublicRoute } from 'src/common/decorator/public_route.decorator';
 
 @ApiTags('users')
 @Controller('users')
@@ -33,6 +45,12 @@ export class UserController {
   @UseGuards(PermissionGuard(AccessProfile.ADMIN_EMPLOYEE))
   async create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
+  }
+
+  @PublicRoute()
+  @Post('/register')
+  async registerPublic(@Body() createUserDto: CreateUserDto) {
+    return this.userService.registerPublic(createUserDto);
   }
 
   @Put(':id')

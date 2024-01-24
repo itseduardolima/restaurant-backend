@@ -14,6 +14,7 @@ import { paginate } from 'nestjs-typeorm-paginate';
 import { ProfileEntity } from 'src/profile/entities/profile.entity';
 import * as bcrypt from 'bcrypt';
 import { CreateClientDto } from './dto/create-client.dto';
+import { NameValidate } from 'src/common/utils/name.validate';
 
 @Injectable()
 export class UserService {
@@ -73,43 +74,27 @@ export class UserService {
   }
 
   async create(createUserDto: CreateUserDto): Promise<UserEntity> {
-    const { user_name, user_password, user_email, user_phone, user_profile } = createUserDto;
-
-    const hashedPassword = await this.hashPassword(user_password);
-    const newUser = this.userRepository.create({
-      user_name,
-      user_password: hashedPassword,
-      user_email,
-      user_phone,
-      user_profile,
-    });
-
-    try {
-      return await this.userRepository.save(newUser);
-    } catch (error) {
-      throw new BadRequestException('Erro ao criar o usuário', error.message);
-    }
+    return this.createUserEntity(createUserDto);
   }
-
+  
   async registerPublic(createClientDto: CreateClientDto): Promise<UserEntity> {
-    const { user_name, user_password, user_email, user_phone } = createClientDto;
-    const user_profile = 3;
+    return this.createUserEntity(createClientDto);
+  }
   
-    const hashedPassword = await this.hashPassword(user_password);
-    const newUser = this.userRepository.create({
-      user_name,
-      user_password: hashedPassword,
-      user_email,
-      user_phone,
-      user_profile,
+  private async createUserEntity(createDto: CreateUserDto | CreateClientDto): Promise<UserEntity> {
+    const { user_password, user_name, user_email, user_phone } = createDto;
+  
+    const user = this.userRepository.create({
+      user_name: NameValidate.getInstance().getValidName(user_name),
+      user_email: NameValidate.getInstance().getValidEmail(user_email),
+      user_phone: NameValidate.getInstance().getValidPhone(user_phone),
+      user_password: await this.hashPassword(user_password),
+      user_profile: 3,
     });
   
-    try {
-      return await this.userRepository.save(newUser);
-    } catch (error) {
-      throw new BadRequestException('Erro ao criar o usuário', error.message);
-    }
+    return await this.userRepository.save(user);
   }
+  
 
   private async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;

@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Put,
-  Delete,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Query, UseGuards, Patch } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -48,12 +38,12 @@ export class UserController {
   }
 
   @PublicRoute()
-  @Post('/register')
-  async registerPublic(@Body() createUserDto: CreateUserDto) {
-    return this.userService.registerPublic(createUserDto);
+  @Post('/register-public')
+  async registerPublic(@Body() createClientDto: CreateClientDto) {
+    return this.userService.registerPublic(createClientDto);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @UseGuards(PermissionGuard(AccessProfile.ADMIN))
   async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(id, updateUserDto);

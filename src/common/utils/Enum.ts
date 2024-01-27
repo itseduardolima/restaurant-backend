@@ -15,3 +15,9 @@ export enum ValidType {
   IS_ALPHABETIC = 'IS_ALPHABETIC',
   ALL_CARACTERS = 'ALL_CARACTERS'
 }
+
+export enum TableState {
+  FREE = 'Free',
+  RESERVED = 'Reserved',
+}
+

@@ -49,20 +49,25 @@ export class UserService {
       .getOne();
   }
 
+  private async hashPassword(password: string): Promise<string> {
+    const saltRounds = 10;
+    return bcrypt.hash(password, saltRounds);
+  }
+  
   async create(createUserDto: CreateUserDto): Promise<UserEntity> {
     const { user_email, user_phone } = createUserDto;
-
+  
     await this.checkExistingUser(this.userRepository.createQueryBuilder('user'), 'user_email', user_email);
     await this.checkExistingUser(this.userRepository.createQueryBuilder('user'), 'user_phone', user_phone);
-
+  
     NameValidate.getInstance().getValidName(createUserDto.user_name);
     NameValidate.getInstance().getValidEmail(createUserDto.user_email);
     NameValidate.getInstance().getValidPhone(createUserDto.user_phone);
-
+  
     const user = this.userRepository.create(createUserDto);
-    await this.hashPassword(user.user_password);
+    user.user_password = await this.hashPassword(user.user_password);
     user.user_profile;
-
+  
     return await this.userRepository.save(user);
   }
 
@@ -76,7 +81,7 @@ export class UserService {
     NameValidate.getInstance().getValidPhone(createClientDto.user_phone);
 
     const user = this.userRepository.create(createClientDto);
-    await this.hashPassword(user.user_password);
+    user.user_password = await this.hashPassword(user.user_password);
     user.user_profile = 3;
 
     return await this.userRepository.save(user);
@@ -131,8 +136,5 @@ export class UserService {
     user.user_profile = updateUserDto.user_profile || user.user_profile;
   }
 
-  private async hashPassword(password: string): Promise<string> {
-    const saltRounds = 10;
-    return bcrypt.hash(password, saltRounds);
-  }
+  
 }

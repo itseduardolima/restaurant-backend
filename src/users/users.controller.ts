@@ -13,6 +13,7 @@ import { PublicRoute } from 'src/common/decorator/public_route.decorator';
 @ApiTags('users')
 @Controller('users')
 @ApiBearerAuth()
+
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

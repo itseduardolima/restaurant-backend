@@ -49,7 +49,6 @@ export class AuthController {
   @Post('/refresh_token')
   @ApiBearerAuth()
   @PublicRoute()
-  // @ApiExcludeEndpoint()
   @UseGuards(JwtRefreshAuthGuard)
   async refreshToken(@Request() payload: any) {
     return this.authService.refreshToken(

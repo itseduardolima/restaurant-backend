@@ -1,13 +1,15 @@
 import { Controller, Get, Body, Param, UseGuards, Patch } from '@nestjs/common';
 import { RestaurantService } from './restaurant.service';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
-import { ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PublicRoute } from 'src/common/decorator/public_route.decorator';
 import { PermissionGuard } from 'src/auth/shared/guards/permission.guard';
 import AccessProfile from 'src/auth/enums/permission.type';
 
 @ApiTags('restaurant')
 @Controller('restaurant')
+@ApiBearerAuth()
+
 export class RestaurantController {
   constructor(private readonly restaurantService: RestaurantService) {}
 

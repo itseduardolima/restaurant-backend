@@ -20,10 +20,8 @@ export class UserService {
 
   async getAll(PaginationFilter: FilterWorkstation, search: QueryUserDto) {
     const { search_name } = search;
-    const query = this.userRepository
-      .createQueryBuilder('user')
-      .leftJoinAndSelect('user.profile', 'profile');
-
+    const query = this.userRepository.createQueryBuilder('user')
+      
     if (search_name) {
       query.andWhere(
         new Brackets((queryBuilderOne) => {
@@ -39,7 +37,6 @@ export class UserService {
   async findById(id: string) {
     return this.userRepository
       .createQueryBuilder('user')
-      .leftJoinAndSelect('user.profile', 'profile')
       .where('user.user_id = :user_id', { user_id: id })
       .getOne();
   }

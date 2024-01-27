@@ -10,6 +10,7 @@ import * as cors from 'cors';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/shared/guards/jwt-auth.guard';
 import { TablesModule } from './tables/tables.module';
+import { ReservationModule } from './reservation/reservation.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { TablesModule } from './tables/tables.module';
     ProfileModule,
     AuthModule,
     TablesModule,
+    ReservationModule,
   ],
   controllers: [],
   providers: [

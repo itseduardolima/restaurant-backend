@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TablesEntity } from './entities/table.entity';
@@ -12,8 +12,21 @@ export class TablesService {
     private readonly tablesRepository: Repository<TablesEntity>,
   ) {}
 
+  async getByNumber(number: number) {
+    return this.tablesRepository.createQueryBuilder('table')
+      .where('table.table_number = :number', { number })
+      .getOne()
+  }
+
   async createTable(createTableDto: CreateTableDto): Promise<TablesEntity> {
+
     const table = this.tablesRepository.create(createTableDto);
+    const tableExist = await this.getByNumber(table.table_number)
+
+    if (tableExist) {
+      throw new BadRequestException(`A mesa ${table.table_number} já existe`);
+    }
+
     return this.tablesRepository.save(table);
   }
 

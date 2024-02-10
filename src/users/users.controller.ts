@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Param, Delete, Query, UseGuards, Patch } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Param, Delete, Query, UseGuards, Patch, Request } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -24,6 +24,14 @@ export class UserController {
     @Query() paginationFilter: FilterWorkstation,
   ) {
     return this.userService.getAll(paginationFilter, searchType);
+  }
+
+  @Get('me')
+  @UseGuards(PermissionGuard(AccessProfile.ALL))
+  @ApiOperation({
+    description: `# Esta rota obtém o usuário logado.` })
+  getLoggedUser(@Request() req) {
+    return this.userService.getCurrentUser(req.user.sub)
   }
 
   @Get(':id')

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { UserEntity } from './entities/user.entity';
@@ -10,28 +14,48 @@ import { paginate } from 'nestjs-typeorm-paginate';
 import * as bcrypt from 'bcrypt';
 import { CreateClientDto } from './dto/create-client.dto';
 import { NameValidate } from 'src/common/utils/name.validate';
+import { UserResponseLoginDto } from './dto/user.response.login.dto';
+import { plainToClass } from 'class-transformer';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
-    ) {}
+  ) {}
 
   async getAll(PaginationFilter: FilterWorkstation, search: QueryUserDto) {
     const { search_name } = search;
-    const query = this.userRepository.createQueryBuilder('user')
-      
+    const query = this.userRepository.createQueryBuilder('user');
+
     if (search_name) {
       query.andWhere(
         new Brackets((queryBuilderOne) => {
-          queryBuilderOne
-            .where('user.user_name like :user_name', { user_name: `%${search_name}%`})
+          queryBuilderOne.where('user.user_name like :user_name', {
+            user_name: `%${search_name}%`,
+          });
         }),
       );
     }
 
     return paginate<UserEntity>(query, PaginationFilter);
+  }
+
+  async getCurrentUser(id: string): Promise<UserResponseLoginDto> {
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.user_id = :user_id', { user_id: id })
+      .getOne();
+
+    const userDto: UserResponseLoginDto = plainToClass(
+      UserResponseLoginDto,
+      user,
+      {
+        excludeExtraneousValues: true,
+      },
+    );
+
+    return userDto;
   }
 
   async findById(id: string) {
@@ -53,28 +77,44 @@ export class UserService {
     const saltRounds = 10;
     return bcrypt.hash(password, saltRounds);
   }
-  
+
   async create(createUserDto: CreateUserDto): Promise<UserEntity> {
     const { user_email, user_phone } = createUserDto;
-  
-    await this.checkExistingUser(this.userRepository.createQueryBuilder('user'), 'user_email', user_email);
-    await this.checkExistingUser(this.userRepository.createQueryBuilder('user'), 'user_phone', user_phone);
-  
+
+    await this.checkExistingUser(
+      this.userRepository.createQueryBuilder('user'),
+      'user_email',
+      user_email,
+    );
+    await this.checkExistingUser(
+      this.userRepository.createQueryBuilder('user'),
+      'user_phone',
+      user_phone,
+    );
+
     NameValidate.getInstance().getValidName(createUserDto.user_name);
     NameValidate.getInstance().getValidEmail(createUserDto.user_email);
     NameValidate.getInstance().getValidPhone(createUserDto.user_phone);
-  
+
     const user = this.userRepository.create(createUserDto);
     user.user_password = await this.hashPassword(user.user_password);
     user.user_profile;
-  
+
     return await this.userRepository.save(user);
   }
 
   async registerPublic(createClientDto: CreateClientDto): Promise<UserEntity> {
     const { user_email, user_phone } = createClientDto;
-    await this.checkExistingUser(this.userRepository.createQueryBuilder('user'), 'user_email', user_email);
-    await this.checkExistingUser(this.userRepository.createQueryBuilder('user'), 'user_phone', user_phone);
+    await this.checkExistingUser(
+      this.userRepository.createQueryBuilder('user'),
+      'user_email',
+      user_email,
+    );
+    await this.checkExistingUser(
+      this.userRepository.createQueryBuilder('user'),
+      'user_phone',
+      user_phone,
+    );
 
     NameValidate.getInstance().getValidName(createClientDto.user_name);
     NameValidate.getInstance().getValidEmail(createClientDto.user_email);
@@ -91,8 +131,20 @@ export class UserService {
     const user = await this.findById(id);
     const { user_email, user_phone } = updateUserDto;
 
-    await this.checkExistingUser(this.userRepository.createQueryBuilder('user').where('user.user_id != :id', { id }), 'user_email', user_email);
-    await this.checkExistingUser(this.userRepository.createQueryBuilder('user').where('user.user_id != :id', { id }), 'user_phone', user_phone);
+    await this.checkExistingUser(
+      this.userRepository
+        .createQueryBuilder('user')
+        .where('user.user_id != :id', { id }),
+      'user_email',
+      user_email,
+    );
+    await this.checkExistingUser(
+      this.userRepository
+        .createQueryBuilder('user')
+        .where('user.user_id != :id', { id }),
+      'user_phone',
+      user_phone,
+    );
 
     await this.validateAndUpdateUserFields(user, updateUserDto);
     return this.userRepository.save(user);
@@ -118,23 +170,36 @@ export class UserService {
 
     await this.userRepository.save(user);
   }
-  
-  private async checkExistingUser(queryBuilder: any, field: string, value: string) {
+
+  private async checkExistingUser(
+    queryBuilder: any,
+    field: string,
+    value: string,
+  ) {
     const user = await queryBuilder
       .where(`user.${field} = :value`, { value })
       .getOne();
 
     if (user) {
-      throw new BadRequestException(`Este ${field === 'user_email' ? 'email' : 'número'} já está cadastrado!`);
+      throw new BadRequestException(
+        `Este ${field === 'user_email' ? 'email' : 'número'} já está cadastrado!`,
+      );
     }
   }
 
-  private async validateAndUpdateUserFields(user: UserEntity, updateUserDto: UpdateUserDto) {
-    user.user_name = NameValidate.getInstance().getValidName(updateUserDto.user_name || user.user_name);
-    user.user_email = NameValidate.getInstance().getValidEmail(updateUserDto.user_email || user.user_email);
-    user.user_phone = NameValidate.getInstance().getValidPhone(updateUserDto.user_phone || user.user_phone);
+  private async validateAndUpdateUserFields(
+    user: UserEntity,
+    updateUserDto: UpdateUserDto,
+  ) {
+    user.user_name = NameValidate.getInstance().getValidName(
+      updateUserDto.user_name || user.user_name,
+    );
+    user.user_email = NameValidate.getInstance().getValidEmail(
+      updateUserDto.user_email || user.user_email,
+    );
+    user.user_phone = NameValidate.getInstance().getValidPhone(
+      updateUserDto.user_phone || user.user_phone,
+    );
     user.user_profile = updateUserDto.user_profile || user.user_profile;
   }
-
-  
 }

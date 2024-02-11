@@ -1,5 +1,5 @@
-import { TableState } from 'src/common/utils/Enum';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { TimeEntity } from 'src/time/entities/time.entity';
 
 @Entity('Tables')
 export class TablesEntity {
@@ -12,6 +12,6 @@ export class TablesEntity {
   @Column()
   table_capacity: number;
 
-  @Column({ type: 'enum', enum: TableState, default: TableState.FREE })
-  table_state: TableState;
+  @OneToMany(() => TimeEntity, time => time.table)
+  times: TimeEntity[];
 }

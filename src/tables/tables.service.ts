@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { TablesEntity } from './entities/table.entity';
 import { CreateTableDto } from './dto/create-table.dto';
 
-
 @Injectable()
 export class TablesService {
   constructor(
@@ -30,8 +29,15 @@ export class TablesService {
     return this.tablesRepository.save(table);
   }
 
-  async findAllTables(): Promise<TablesEntity[]> {
-    return this.tablesRepository.find();
+  async findAllTables() {
+    return await this.tablesRepository
+    .createQueryBuilder('table')
+      .leftJoinAndSelect('table.times', 'times')
+      .select([
+        'times',
+        'table'
+      ])
+      .getMany();
   }
 
   async findById(id: string) {

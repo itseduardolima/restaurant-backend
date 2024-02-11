@@ -16,8 +16,7 @@ export enum ValidType {
   ALL_CARACTERS = 'ALL_CARACTERS'
 }
 
-export enum TableState {
-  FREE = 'Free',
-  RESERVED = 'Reserved',
+export enum TimeStatus {
+  RESERVED = 'RESERVED',
+  FREE = 'FREE',
 }
-

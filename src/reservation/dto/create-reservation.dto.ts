@@ -10,5 +10,8 @@ export class CreateReservationDTO extends OmitType(ReservationEntity, ['reservat
   tableId: string;
 
   @ApiProperty()
+  timeId: string;
+
+  @ApiProperty()
   reservationDate: Date;
 }

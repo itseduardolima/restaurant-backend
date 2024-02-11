@@ -1,17 +1,19 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {  ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, Repository } from 'typeorm';
+import {  Repository } from 'typeorm';
 import { ReservationEntity } from './entities/reservation.entity';
 import { CreateReservationDTO } from './dto/create-reservation.dto';
 import { UpdateReservationDTO } from './dto/update-reservation.dto';
-import * as moment from 'moment';
-
+import { TimeEntity } from 'src/time/entities/time.entity';
+import { TimeStatus } from 'src/common/utils/Enum';
 
 @Injectable()
 export class ReservationService {
   constructor(
     @InjectRepository(ReservationEntity)
     private readonly reservationRepository: Repository<ReservationEntity>,
+    @InjectRepository(TimeEntity)
+    private readonly timeRepository: Repository<TimeEntity>,
   ) {}
 
   async getAllReservations() {
@@ -19,51 +21,44 @@ export class ReservationService {
       .createQueryBuilder('reservation')
       .leftJoinAndSelect('reservation.table', 'table')
       .leftJoinAndSelect('reservation.user', 'user')
+      .leftJoinAndSelect('reservation.time', 'time')
       .select([
         'reservation.reservation_id',
         'reservation.reservation_date',
         'reservation.user',
         'user.user_id',
         'user.user_name',
-        'table'
+        'table',
+        'time'
       ])
       .getMany();
   }
 
   async create(createReservationDTO: CreateReservationDTO): Promise<ReservationEntity> {
-    const { userId, tableId, reservationDate } = createReservationDTO;
+    const { userId, tableId, reservationDate, timeId } = createReservationDTO;
 
-    // Define a duração de cada slot de tempo em minutos
-    const slotDurationMinutes = 60; // 1 hora
-    const slotsPerHour = 60 / slotDurationMinutes;
-
-    // Obtem a data e hora inicial para a reserva
-    const startDateTime = moment(reservationDate).startOf('hour');
-
-    // Divide o período de reserva em slots de tempo e verifica cada um deles
-    for (let slot = 0; slot < slotsPerHour; slot++) {
-      const slotStartDateTime = startDateTime.clone().add(slot * slotDurationMinutes, 'minutes');
-      const slotEndDateTime = slotStartDateTime.clone().add(slotDurationMinutes, 'minutes');
-
-      const existingReservation = await this.reservationRepository.findOne({
-        where: {
-          table: { table_id: tableId },
-          reservation_date: Between(slotStartDateTime.toDate(), slotEndDateTime.toDate()),
-        },
-      });
-
-      if (existingReservation) {
-        throw new ConflictException('Esta mesa já está reservada para esse horário.');
-      }
+    // Verifique se o horário está disponível
+    const time = await this.timeRepository.findOne({where: {time_id: timeId}});
+    if (!time || time.time_status !== 'FREE') {
+      throw new ConflictException('O horário selecionado não está disponível.');
     }
 
+    // Crie uma nova reserva associada ao horário específico
     const reservation = this.reservationRepository.create({
       user: { user_id: userId },
       table: { table_id: tableId },
+      time: { time_id: timeId }, // Associe a reserva ao horário específico
       reservation_date: reservationDate,
     });
+
+    // Atualize o status do horário para "RESERVED"
+    time.time_status = TimeStatus.RESERVED;
+    await this.timeRepository.save(time);
+
+    // Salve a reserva e retorne
     return await this.reservationRepository.save(reservation);
   }
+  
 
   async findById(reservationId: string): Promise<ReservationEntity> {
     const reservation = await this.reservationRepository.findOne({where: {reservation_id: reservationId}});
@@ -71,6 +66,12 @@ export class ReservationService {
       throw new NotFoundException('Reserva não encontrada');
     }
     return reservation;
+  }
+
+  async findByTimeId(timeId: string) {
+    const time = await this.timeRepository.findOne({where: {time_id: timeId}});
+    
+    return time;
   }
 
   async update(reservationId: string, updateReservationDTO: UpdateReservationDTO): Promise<ReservationEntity> {

@@ -4,16 +4,16 @@ import {  Between, Repository } from 'typeorm';
 import { ReservationEntity } from './entities/reservation.entity';
 import { CreateReservationDTO } from './dto/create-reservation.dto';
 import { UpdateReservationDTO } from './dto/update-reservation.dto';
-import { TimeEntity } from 'src/time/entities/time.entity';
 import * as moment from 'moment';
+import { TablesEntity } from 'src/tables/entities/table.entity';
 
 @Injectable()
 export class ReservationService {
   constructor(
     @InjectRepository(ReservationEntity)
     private readonly reservationRepository: Repository<ReservationEntity>,
-    @InjectRepository(TimeEntity)
-    private readonly timeRepository: Repository<TimeEntity>,
+    @InjectRepository(TablesEntity)
+    private readonly tablesRepository: Repository<TablesEntity>,
   ) {}
 
   async getAllReservations() {
@@ -35,69 +35,90 @@ export class ReservationService {
   }
 
   async create(createReservationDTO: CreateReservationDTO): Promise<ReservationEntity> {
-    const { userId, tableId, reservationDate, timeId } = createReservationDTO;
+    console.log("Create Reservation DTO:", createReservationDTO);
+    const { userId, tableId, reservationDate } = createReservationDTO;
 
-     const slotDurationMinutes = 60;
-     const slotsPerHour = 60 / slotDurationMinutes;
-     const startDateTime = moment(reservationDate).startOf('hour');
+    const slotDurationMinutes = 60;
+    const slotsPerHour = 60 / slotDurationMinutes;
+    const startDateTime = moment(reservationDate).startOf('hour');
 
-     for (let slot = 0; slot < slotsPerHour; slot++) {
-       const slotStartDateTime = startDateTime.clone().add(slot * slotDurationMinutes, 'minutes');
-       const slotEndDateTime = slotStartDateTime.clone().add(slotDurationMinutes, 'minutes');
+    console.log("Start DateTime:", startDateTime.toString());
+
+    for (let slot = 0; slot < slotsPerHour; slot++) {
+        const slotStartDateTime = startDateTime.clone().add(slot * slotDurationMinutes, 'minutes');
+        const slotEndDateTime = slotStartDateTime.clone().add(slotDurationMinutes, 'minutes');
+
+        console.log("Slot Start DateTime:", slotStartDateTime.toString());
+        console.log("Slot End DateTime:", slotEndDateTime.toString());
  
-       const existingReservation = await this.reservationRepository.findOne({
-         where: {
-           table: { table_id: tableId },
-           reservation_date: Between(slotStartDateTime.toDate(), slotEndDateTime.toDate()),
-         },
-       });
+        const existingReservation = await this.reservationRepository.findOne({
+            where: {
+                table: { table_id: tableId },
+                reservation_date: Between(slotStartDateTime.toDate(), slotEndDateTime.toDate()),
+            },
+        });
+
+        console.log("Existing Reservation:", existingReservation);
  
-       if (existingReservation) {
-         throw new ConflictException('Esta mesa já está reservada para esse horário.');
-       }
-     }
+        if (existingReservation) {
+            throw new ConflictException('Esta mesa já está reservada para esse horário.');
+        }
+    }
  
     const reservation = this.reservationRepository.create({
-      user: { user_id: userId },
-      table: { table_id: tableId },
-      time: { time_id: timeId },
-      reservation_date: reservationDate,
+        user: { user_id: userId },
+        table: { table_id: tableId },
+        reservation_date: reservationDate,
     });
 
+    console.log("New Reservation:", reservation);
+
     return await this.reservationRepository.save(reservation);
+
   }
 
   async checkAvailability(currentDate: string) {
-
     const selectedDate = new Date(currentDate);
     selectedDate.setMinutes(selectedDate.getMinutes() + selectedDate.getTimezoneOffset());
 
     const nextDay = new Date(selectedDate);
     nextDay.setDate(selectedDate.getDate() + 1);
 
+    const allTables = await this.tablesRepository.find();
+
     const appointmentsForDay = await this.reservationRepository.find({
-      where: {
-        reservation_date: Between(selectedDate, nextDay)
-      },
-      
+        where: {
+            reservation_date: Between(selectedDate, nextDay)
+        },
+        relations: ['table']
     });
 
     const timeSlots = this.generateTimeSlots(selectedDate);
     const schedule = [];
 
     for (const slot of timeSlots) {
-      const matchingAppointment = appointmentsForDay.find(app =>
-        app.reservation_date.getTime() === slot.getTime()
-      );
+        const matchingAppointments = appointmentsForDay.filter(app =>
+            app.reservation_date.getTime() === slot.getTime()
+        );
 
-      schedule.push({
-        time: slot.toISOString(),
-        isBooked: !!matchingAppointment,        
-      });
+        const tablesAvailability = allTables.map(table => {
+            const isBooked = matchingAppointments.some(app => app.table.table_id === table.table_id);
+            return {
+                table_id: table.table_id,
+                table_number: table.table_number,
+                table_capacity: table.table_capacity,
+                isBooked: isBooked
+            };
+        });
+
+        schedule.push({
+            time: slot.toISOString(),
+            tables: tablesAvailability
+        });
     }
 
     return schedule;
-  }
+}
 
   generateTimeSlots(date: Date): Date[] {
     const UTC_OFFSET_MANAUS = 0;
@@ -122,12 +143,6 @@ export class ReservationService {
       throw new NotFoundException('Reserva não encontrada');
     }
     return reservation;
-  }
-
-  async findByTimeId(timeId: string) {
-    const time = await this.timeRepository.findOne({where: {time_id: timeId}});
-    
-    return time;
   }
 
   async update(reservationId: string, updateReservationDTO: UpdateReservationDTO): Promise<ReservationEntity> {

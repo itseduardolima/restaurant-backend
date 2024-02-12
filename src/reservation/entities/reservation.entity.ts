@@ -1,5 +1,4 @@
 import { TablesEntity } from 'src/tables/entities/table.entity';
-import { TimeEntity } from 'src/time/entities/time.entity';
 import { UserEntity } from 'src/users/entities/user.entity';
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
@@ -15,10 +14,6 @@ export class ReservationEntity {
   @ManyToOne(() => TablesEntity)
   @JoinColumn({ name: 'table_id' })
   table: TablesEntity;
-
-  @ManyToOne(() => TimeEntity)
-  @JoinColumn({ name: 'time_id' })
-  time: TimeEntity;
 
   @Column({ type: 'timestamp' })
   reservation_date: Date;

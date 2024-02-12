@@ -32,9 +32,7 @@ export class TablesService {
   async findAllTables() {
     return await this.tablesRepository
     .createQueryBuilder('table')
-      .leftJoinAndSelect('table.times', 'times')
       .select([
-        'times',
         'table'
       ])
       .getMany();

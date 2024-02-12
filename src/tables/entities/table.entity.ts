@@ -1,5 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
-import { TimeEntity } from 'src/time/entities/time.entity';
+import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('Tables')
 export class TablesEntity {
@@ -11,7 +10,4 @@ export class TablesEntity {
 
   @Column()
   table_capacity: number;
-
-  @OneToMany(() => TimeEntity, time => time.table)
-  times: TimeEntity[];
 }

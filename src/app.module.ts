@@ -11,7 +11,6 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/shared/guards/jwt-auth.guard';
 import { TablesModule } from './tables/tables.module';
 import { ReservationModule } from './reservation/reservation.module';
-import { TimeModule } from './time/time.module';
 
 @Module({
   imports: [
@@ -28,7 +27,6 @@ import { TimeModule } from './time/time.module';
     AuthModule,
     TablesModule,
     ReservationModule,
-    TimeModule,
   ],
   controllers: [],
   providers: [

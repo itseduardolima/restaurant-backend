@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { ReservationService } from './reservation.service';
 import { CreateReservationDTO } from './dto/create-reservation.dto';
 import { UpdateReservationDTO } from './dto/update-reservation.dto';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { PermissionGuard } from 'src/auth/shared/guards/permission.guard';
 import AccessProfile from 'src/auth/enums/permission.type';
 
@@ -25,9 +25,14 @@ export class ReservationController {
     return await this.reservationService.getAllReservations();
   }
 
-  @Get(':id')
-  async getReservationById(@Param('id') reservationId: string) {
-    return await this.reservationService.findById(reservationId);
+  
+  @Get('availability')
+  @UseGuards(PermissionGuard(AccessProfile.ALL))
+  @ApiOperation({
+    description: `# Esta rota mostra horários disponíveis para esta data.` })
+  @ApiQuery({ name: 'date', description: '### informe a data para realizar esta busca (yyyy-mm-dd)' })
+  async checkAvailability(@Query('date') date: string) {
+    return await this.reservationService.checkAvailability(date);
   }
 
   @Put(':id')

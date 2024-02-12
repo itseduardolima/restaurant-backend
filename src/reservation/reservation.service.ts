@@ -1,11 +1,11 @@
 import {  ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {  Repository } from 'typeorm';
+import {  Between, Repository } from 'typeorm';
 import { ReservationEntity } from './entities/reservation.entity';
 import { CreateReservationDTO } from './dto/create-reservation.dto';
 import { UpdateReservationDTO } from './dto/update-reservation.dto';
 import { TimeEntity } from 'src/time/entities/time.entity';
-import { TimeStatus } from 'src/common/utils/Enum';
+import * as moment from 'moment';
 
 @Injectable()
 export class ReservationService {
@@ -37,26 +37,82 @@ export class ReservationService {
   async create(createReservationDTO: CreateReservationDTO): Promise<ReservationEntity> {
     const { userId, tableId, reservationDate, timeId } = createReservationDTO;
 
-    // Verifique se o horário está disponível
-    const time = await this.timeRepository.findOne({where: {time_id: timeId}});
-    if (!time || time.time_status !== 'FREE') {
-      throw new ConflictException('O horário selecionado não está disponível.');
-    }
+     const slotDurationMinutes = 60;
+     const slotsPerHour = 60 / slotDurationMinutes;
+     const startDateTime = moment(reservationDate).startOf('hour');
 
-    // Crie uma nova reserva associada ao horário específico
+     for (let slot = 0; slot < slotsPerHour; slot++) {
+       const slotStartDateTime = startDateTime.clone().add(slot * slotDurationMinutes, 'minutes');
+       const slotEndDateTime = slotStartDateTime.clone().add(slotDurationMinutes, 'minutes');
+ 
+       const existingReservation = await this.reservationRepository.findOne({
+         where: {
+           table: { table_id: tableId },
+           reservation_date: Between(slotStartDateTime.toDate(), slotEndDateTime.toDate()),
+         },
+       });
+ 
+       if (existingReservation) {
+         throw new ConflictException('Esta mesa já está reservada para esse horário.');
+       }
+     }
+ 
     const reservation = this.reservationRepository.create({
       user: { user_id: userId },
       table: { table_id: tableId },
-      time: { time_id: timeId }, // Associe a reserva ao horário específico
+      time: { time_id: timeId },
       reservation_date: reservationDate,
     });
 
-    // Atualize o status do horário para "RESERVED"
-    time.time_status = TimeStatus.RESERVED;
-    await this.timeRepository.save(time);
-
-    // Salve a reserva e retorne
     return await this.reservationRepository.save(reservation);
+  }
+
+  async checkAvailability(currentDate: string) {
+
+    const selectedDate = new Date(currentDate);
+    selectedDate.setMinutes(selectedDate.getMinutes() + selectedDate.getTimezoneOffset());
+
+    const nextDay = new Date(selectedDate);
+    nextDay.setDate(selectedDate.getDate() + 1);
+
+    const appointmentsForDay = await this.reservationRepository.find({
+      where: {
+        reservation_date: Between(selectedDate, nextDay)
+      },
+      
+    });
+
+    const timeSlots = this.generateTimeSlots(selectedDate);
+    const schedule = [];
+
+    for (const slot of timeSlots) {
+      const matchingAppointment = appointmentsForDay.find(app =>
+        app.reservation_date.getTime() === slot.getTime()
+      );
+
+      schedule.push({
+        time: slot.toISOString(),
+        isBooked: !!matchingAppointment,        
+      });
+    }
+
+    return schedule;
+  }
+
+  generateTimeSlots(date: Date): Date[] {
+    const UTC_OFFSET_MANAUS = 0;
+    const startTime = 18;
+    const endTime = 22;
+    const slots = [];
+
+    for (let hour = startTime; hour < endTime; hour++) {
+      const slot = new Date(date);
+
+      slot.setUTCHours(hour + UTC_OFFSET_MANAUS, 0, 0, 0);
+      slots.push(slot);
+    }
+
+    return slots;
   }
   
 

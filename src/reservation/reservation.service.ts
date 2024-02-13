@@ -6,6 +6,7 @@ import { CreateReservationDTO } from './dto/create-reservation.dto';
 import { UpdateReservationDTO } from './dto/update-reservation.dto';
 import * as moment from 'moment';
 import { TablesEntity } from 'src/tables/entities/table.entity';
+import { QueryCapacityDto } from './dto/query-reservation.dto';
 
 @Injectable()
 export class ReservationService {
@@ -77,14 +78,21 @@ export class ReservationService {
 
   }
 
-  async checkAvailability(currentDate: string) {
+  async checkAvailability(currentDate: string, search: QueryCapacityDto) {
+    const { search_capacity } = search;
+    const query = this.tablesRepository.createQueryBuilder('table');
+
+    if (search_capacity) {
+        query.andWhere('table.table_capacity LIKE :table_capacity', {
+            table_capacity: `%${search_capacity}%`,
+        });
+    }
+
     const selectedDate = new Date(currentDate);
     selectedDate.setMinutes(selectedDate.getMinutes() + selectedDate.getTimezoneOffset());
 
     const nextDay = new Date(selectedDate);
     nextDay.setDate(selectedDate.getDate() + 1);
-
-    const allTables = await this.tablesRepository.find();
 
     const appointmentsForDay = await this.reservationRepository.find({
         where: {
@@ -101,15 +109,32 @@ export class ReservationService {
             app.reservation_date.getTime() === slot.getTime()
         );
 
-        const tablesAvailability = allTables.map(table => {
-            const isBooked = matchingAppointments.some(app => app.table.table_id === table.table_id);
-            return {
-                table_id: table.table_id,
-                table_number: table.table_number,
-                table_capacity: table.table_capacity,
-                isBooked: isBooked
-            };
-        });
+        const tablesAvailability = [];
+
+        if (search_capacity) {
+            const filteredTables = await query.getMany();
+            for (const table of filteredTables) {
+                const isBooked = matchingAppointments.some(app => app.table.table_id === table.table_id);
+                tablesAvailability.push({
+                    table_id: table.table_id,
+                    table_number: table.table_number,
+                    table_capacity: table.table_capacity,
+                    isBooked: isBooked
+                });
+            }
+        } else {
+            
+            const allTables = await this.tablesRepository.find();
+            for (const table of allTables) {
+                const isBooked = matchingAppointments.some(app => app.table.table_id === table.table_id);
+                tablesAvailability.push({
+                    table_id: table.table_id,
+                    table_number: table.table_number,
+                    table_capacity: table.table_capacity,
+                    isBooked: isBooked
+                });
+            }
+        }
 
         schedule.push({
             time: slot.toISOString(),
@@ -119,6 +144,7 @@ export class ReservationService {
 
     return schedule;
 }
+
 
   generateTimeSlots(date: Date): Date[] {
     const UTC_OFFSET_MANAUS = 0;

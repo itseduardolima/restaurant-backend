@@ -7,6 +7,7 @@ import { UpdateReservationDTO } from './dto/update-reservation.dto';
 import * as moment from 'moment';
 import { TablesEntity } from 'src/tables/entities/table.entity';
 import { QueryCapacityDto } from './dto/query-reservation.dto';
+import { FilterWorkstation } from 'src/common/utils/filterwork.dto';
 
 @Injectable()
 export class ReservationService {
@@ -78,8 +79,9 @@ export class ReservationService {
 
   }
 
-  async checkAvailability(currentDate: string, search: QueryCapacityDto) {
+  async checkAvailability(PaginationFilter: FilterWorkstation, currentDate: string, search: QueryCapacityDto) {
     const { search_capacity } = search;
+    const {sort} = PaginationFilter
     const query = this.tablesRepository.createQueryBuilder('table');
 
     if (search_capacity) {
@@ -87,6 +89,8 @@ export class ReservationService {
             table_capacity: `${search_capacity}%`,
         });
     }
+
+    query.orderBy('table.table_number', `${sort === 'DESC' ? 'DESC' : 'ASC'}`);
 
     const selectedDate = new Date(currentDate);
     selectedDate.setMinutes(selectedDate.getMinutes() + selectedDate.getTimezoneOffset());

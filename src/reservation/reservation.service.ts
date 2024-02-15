@@ -89,8 +89,6 @@ export class ReservationService {
     }
 
     const selectedDate = new Date(currentDate);
-    selectedDate.setMinutes(selectedDate.getMinutes() + selectedDate.getTimezoneOffset());
-
     const nextDay = new Date(selectedDate);
     nextDay.setDate(selectedDate.getDate() + 1);
 
@@ -105,8 +103,9 @@ export class ReservationService {
     const schedule = [];
 
     for (const slot of timeSlots) {
+        const slotTime = slot.toISOString().split('T')[1].slice(0, 8);
         const matchingAppointments = appointmentsForDay.filter(app =>
-            app.reservation_date.getTime() === slot.getTime()
+            app.reservation_date.toISOString().split('T')[1].slice(0, 8) === slotTime
         );
 
         const tablesAvailability = [];
@@ -123,7 +122,6 @@ export class ReservationService {
                 });
             }
         } else {
-            
             const allTables = await this.tablesRepository.find();
             for (const table of allTables) {
                 const isBooked = matchingAppointments.some(app => app.table.table_id === table.table_id);
@@ -137,7 +135,7 @@ export class ReservationService {
         }
 
         schedule.push({
-            time: slot.toISOString(),
+            time: slotTime,
             tables: tablesAvailability
         });
     }

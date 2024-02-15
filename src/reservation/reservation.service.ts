@@ -84,7 +84,7 @@ export class ReservationService {
 
     if (search_capacity) {
         query.andWhere('table.table_capacity LIKE :table_capacity', {
-            table_capacity: `%${search_capacity}%`,
+            table_capacity: `${search_capacity}%`,
         });
     }
 

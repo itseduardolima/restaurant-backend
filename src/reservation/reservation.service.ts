@@ -1,13 +1,15 @@
 import {  ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {  Between, Repository } from 'typeorm';
+import {  Between, Brackets, Repository } from 'typeorm';
 import { ReservationEntity } from './entities/reservation.entity';
 import { CreateReservationDTO } from './dto/create-reservation.dto';
 import { UpdateReservationDTO } from './dto/update-reservation.dto';
 import * as moment from 'moment';
 import { TablesEntity } from 'src/tables/entities/table.entity';
-import { QueryCapacityDto } from './dto/query-reservation.dto';
+import { QueryReservationDto } from './dto/query-reservation.dto';
 import { FilterWorkstation } from 'src/common/utils/filterwork.dto';
+import { UserEntity } from 'src/users/entities/user.entity';
+import { QueryUserDto } from 'src/users/dto/query-user.dto';
 
 @Injectable()
 export class ReservationService {
@@ -16,25 +18,39 @@ export class ReservationService {
     private readonly reservationRepository: Repository<ReservationEntity>,
     @InjectRepository(TablesEntity)
     private readonly tablesRepository: Repository<TablesEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
   ) {}
 
-  async getAllReservations() {
-    return await this.reservationRepository
-      .createQueryBuilder('reservation')
-      .leftJoinAndSelect('reservation.table', 'table')
-      .leftJoinAndSelect('reservation.user', 'user')
-      .leftJoinAndSelect('reservation.time', 'time')
-      .select([
-        'reservation.reservation_id',
-        'reservation.reservation_date',
-        'reservation.user',
-        'user.user_id',
-        'user.user_name',
-        'table',
-        'time'
-      ])
-      .getMany();
-  }
+  async getAllReservations(search: QueryUserDto) {
+    const { search_name, search_userId } = search;
+    const query = this.reservationRepository.createQueryBuilder('reservation')
+        .leftJoinAndSelect('reservation.table', 'table')
+        .leftJoinAndSelect('reservation.user', 'user')
+        .select([
+            'reservation.reservation_id',
+            'reservation.reservation_date',
+            'user.user_id',
+            'user.user_name',
+            'table',  
+        ]);
+
+        if (search_name || search_userId) {
+          query.andWhere(new Brackets(queryBuilderOne => {
+              if (search_name) {
+                  queryBuilderOne
+                      .where('user.user_name LIKE :user_name', { user_name: `%${search_name}%` })
+              }
+              if (search_userId) {
+                  queryBuilderOne
+                      .orWhere('user.user_id LIKE :user_id', { user_id: `%${search_userId}%` })
+              }
+          }));
+      }
+
+    return await query.getMany();
+}
+
 
   async create(createReservationDTO: CreateReservationDTO): Promise<ReservationEntity> {
     console.log("Create Reservation DTO:", createReservationDTO);
@@ -79,7 +95,7 @@ export class ReservationService {
 
   }
 
-  async checkAvailability(PaginationFilter: FilterWorkstation, currentDate: string, search: QueryCapacityDto) {
+  async checkAvailability(PaginationFilter: FilterWorkstation, currentDate: string, search: QueryReservationDto) {
     const { search_capacity } = search;
     const {sort} = PaginationFilter
     const query = this.tablesRepository.createQueryBuilder('table');

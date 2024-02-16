@@ -5,8 +5,9 @@ import { UpdateReservationDTO } from './dto/update-reservation.dto';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { PermissionGuard } from 'src/auth/shared/guards/permission.guard';
 import AccessProfile from 'src/auth/enums/permission.type';
-import { QueryCapacityDto } from './dto/query-reservation.dto';
+import { QueryReservationDto } from './dto/query-reservation.dto';
 import { FilterWorkstation } from 'src/common/utils/filterwork.dto';
+import { QueryUserDto } from 'src/users/dto/query-user.dto';
 
 @Controller('reservations')
 @ApiTags('reservations')
@@ -23,8 +24,8 @@ export class ReservationController {
 
   @Get()
   @UseGuards(PermissionGuard(AccessProfile.ALL))
-  async getAllReservations() {
-    return await this.reservationService.getAllReservations();
+  async getAllReservations(@Query() search_name: QueryUserDto) {
+    return await this.reservationService.getAllReservations(search_name);
   }
 
   
@@ -33,7 +34,7 @@ export class ReservationController {
   @ApiOperation({
     description: `# Esta rota mostra horários disponíveis para esta data.` })
   @ApiQuery({ name: 'date', description: '### informe a data para realizar esta busca (yyyy-mm-dd)' })
-  async checkAvailability(@Query() paginationFilter: FilterWorkstation, @Query('date') date: string, @Query() searchType: QueryCapacityDto,) {
+  async checkAvailability(@Query() paginationFilter: FilterWorkstation, @Query('date') date: string, @Query() searchType: QueryReservationDto,) {
     return await this.reservationService.checkAvailability(paginationFilter, date, searchType);
   }
 

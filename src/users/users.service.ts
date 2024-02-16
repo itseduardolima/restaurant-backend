@@ -25,18 +25,21 @@ export class UserService {
   ) {}
 
   async getAll(PaginationFilter: FilterWorkstation, search: QueryUserDto) {
-    const { search_name } = search;
+    const { search_name, search_userId } = search;
     const query = this.userRepository.createQueryBuilder('user');
 
-    if (search_name) {
-      query.andWhere(
-        new Brackets((queryBuilderOne) => {
-          queryBuilderOne.where('user.user_name like :user_name', {
-            user_name: `%${search_name}%`,
-          });
-        }),
-      );
-    }
+    if (search_name || search_userId) {
+      query.andWhere(new Brackets(queryBuilderOne => {
+          if (search_name) {
+              queryBuilderOne
+                  .where('user.user_name LIKE :user_name', { user_name: `%${search_name}%` })
+          }
+          if (search_userId) {
+              queryBuilderOne
+                  .orWhere('user.user_id LIKE :user_id', { user_id: `%${search_userId}%` })
+          }
+      }));
+  }
 
     return paginate<UserEntity>(query, PaginationFilter);
   }

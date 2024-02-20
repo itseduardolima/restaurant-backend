@@ -28,8 +28,7 @@ export class ReservationService {
         .leftJoinAndSelect('reservation.table', 'table')
         .leftJoinAndSelect('reservation.user', 'user')
         .select([
-            'reservation.reservation_id',
-            'reservation.reservation_date',
+            'reservation',
             'user.user_id',
             'user.user_name',
             'table',  

@@ -24,8 +24,8 @@ export class ReservationController {
 
   @Get()
   @UseGuards(PermissionGuard(AccessProfile.ALL))
-  async getAllReservations(@Query() search_name: QueryUserDto) {
-    return await this.reservationService.getAllReservations(search_name);
+  async getAllReservations(@Query() search_name: QueryUserDto, @Query() paginationFilter: FilterWorkstation,) {
+    return await this.reservationService.getAllReservations(search_name, paginationFilter);
   }
 
   

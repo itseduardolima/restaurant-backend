@@ -10,6 +10,7 @@ import { QueryReservationDto } from './dto/query-reservation.dto';
 import { FilterWorkstation } from 'src/common/utils/filterwork.dto';
 import { UserEntity } from 'src/users/entities/user.entity';
 import { QueryUserDto } from 'src/users/dto/query-user.dto';
+import { paginate } from 'nestjs-typeorm-paginate';
 
 @Injectable()
 export class ReservationService {
@@ -18,11 +19,10 @@ export class ReservationService {
     private readonly reservationRepository: Repository<ReservationEntity>,
     @InjectRepository(TablesEntity)
     private readonly tablesRepository: Repository<TablesEntity>,
-    @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>,
   ) {}
 
-  async getAllReservations(search: QueryUserDto) {
+  async getAllReservations(search: QueryUserDto, PaginationFilter: FilterWorkstation) {
+
     const { search_name, search_userId } = search;
     const query = this.reservationRepository.createQueryBuilder('reservation')
         .leftJoinAndSelect('reservation.table', 'table')
@@ -47,7 +47,7 @@ export class ReservationService {
           }));
       }
 
-    return await query.getMany();
+    return await paginate(query, PaginationFilter);
 }
 
 

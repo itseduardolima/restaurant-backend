@@ -22,7 +22,7 @@ export class ReservationService {
   ) {}
 
   async getAllReservations(search: QueryUserDto, PaginationFilter: FilterWorkstation) {
-
+    const {sort} = PaginationFilter
     const { search_name, search_userId } = search;
     const query = this.reservationRepository.createQueryBuilder('reservation')
         .leftJoinAndSelect('reservation.table', 'table')
@@ -33,6 +33,8 @@ export class ReservationService {
             'user.user_name',
             'table',  
         ]);
+
+        query.orderBy('reservation.reservation_date',`${sort === 'DESC' ? 'DESC': 'ASC'}`);
 
         if (search_name || search_userId) {
           query.andWhere(new Brackets(queryBuilderOne => {
@@ -87,8 +89,6 @@ export class ReservationService {
         table: { table_id: tableId },
         reservation_date: reservationDate,
     });
-
-    console.log("New Reservation:", reservation);
 
     return await this.reservationRepository.save(reservation);
 

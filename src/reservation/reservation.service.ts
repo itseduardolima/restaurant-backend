@@ -1,4 +1,4 @@
-import {  ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {  BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {  Between, Brackets, Repository } from 'typeorm';
 import { ReservationEntity } from './entities/reservation.entity';
@@ -8,7 +8,6 @@ import * as moment from 'moment';
 import { TablesEntity } from 'src/tables/entities/table.entity';
 import { QueryReservationDto } from './dto/query-reservation.dto';
 import { FilterWorkstation } from 'src/common/utils/filterwork.dto';
-import { UserEntity } from 'src/users/entities/user.entity';
 import { QueryUserDto } from 'src/users/dto/query-user.dto';
 import { paginate } from 'nestjs-typeorm-paginate';
 
@@ -52,47 +51,50 @@ export class ReservationService {
     return await paginate(query, PaginationFilter);
 }
 
+async create(createReservationDTO: CreateReservationDTO): Promise<ReservationEntity> {
+  console.log("Create Reservation DTO:", createReservationDTO);
+  const { userId, tableId, reservationDate } = createReservationDTO;
 
-  async create(createReservationDTO: CreateReservationDTO): Promise<ReservationEntity> {
-    console.log("Create Reservation DTO:", createReservationDTO);
-    const { userId, tableId, reservationDate } = createReservationDTO;
+  const booking = moment(reservationDate, 'YYYY-MM-DDTHH:mm:ss.SSSZ').toDate()
 
-    const slotDurationMinutes = 60;
-    const slotsPerHour = 60 / slotDurationMinutes;
-    const startDateTime = moment(reservationDate).startOf('hour');
-
-    console.log("Start DateTime:", startDateTime.toString());
-
-    for (let slot = 0; slot < slotsPerHour; slot++) {
-        const slotStartDateTime = startDateTime.clone().add(slot * slotDurationMinutes, 'minutes');
-        const slotEndDateTime = slotStartDateTime.clone().add(slotDurationMinutes, 'minutes');
-
-        console.log("Slot Start DateTime:", slotStartDateTime.toString());
-        console.log("Slot End DateTime:", slotEndDateTime.toString());
- 
-        const existingReservation = await this.reservationRepository.findOne({
-            where: {
-                table: { table_id: tableId },
-                reservation_date: Between(slotStartDateTime.toDate(), slotEndDateTime.toDate()),
-            },
-        });
-
-        console.log("Existing Reservation:", existingReservation);
- 
-        if (existingReservation) {
-            throw new ConflictException('Esta mesa já está reservada para esse horário.');
-        }
-    }
- 
-    const reservation = this.reservationRepository.create({
-        user: { user_id: userId },
-        table: { table_id: tableId },
-        reservation_date: reservationDate,
-    });
-
-    return await this.reservationRepository.save(reservation);
-
+  if (moment(booking).isBefore(moment(), 'day')) {
+    throw new BadRequestException('Não é possível fazer uma reserva em uma data retroativa.');
   }
+
+  const slotDurationMinutes = 60;
+  const slotsPerHour = 60 / slotDurationMinutes;
+  const startDateTime = moment(reservationDate, 'YYYY-MM-DDTHH:mm:ss.SSSZ').startOf('hour');
+
+  for (let slot = 0; slot < slotsPerHour; slot++) {
+      const slotStartDateTime = startDateTime.clone().add(slot * slotDurationMinutes, 'minutes');
+      const slotEndDateTime = slotStartDateTime.clone().add(slotDurationMinutes, 'minutes');
+
+      console.log("Slot Start DateTime:", slotStartDateTime.toString());
+      console.log("Slot End DateTime:", slotEndDateTime.toString());
+
+      const existingReservation = await this.reservationRepository.findOne({
+          where: {
+              table: { table_id: tableId },
+              reservation_date: Between(slotStartDateTime.toDate(), slotEndDateTime.toDate()),
+          },
+      });
+
+      console.log("Existing Reservation:", existingReservation);
+
+      if (existingReservation) {
+          throw new ConflictException('Esta mesa já está reservada para esse horário.');
+      }
+  }
+
+  const reservation = this.reservationRepository.create({
+      user: { user_id: userId },
+      table: { table_id: tableId },
+      reservation_date: booking
+  });
+
+  return await this.reservationRepository.save(reservation);
+
+}
 
   async checkAvailability(PaginationFilter: FilterWorkstation, currentDate: string, search: QueryReservationDto) {
     const { search_capacity } = search;
